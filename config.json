@@ -1,0 +1,131 @@
+{
+  "_lisezmoi": [
+    "Reglages de pidog-ecoute. Le robot ecoute la musique ambiante et bouge la",
+    "tete et la queue en rythme. Il ne joue AUCUN son et ne bouge PAS les pattes.",
+    "Verifier apres modification : python3 outils/verifier.py"
+  ],
+  "micro": {
+    "peripherique": "plug:mic",
+    "frequence_hz": 16000,
+    "trame_ms": 10,
+    "_aide": "Meme chaine de capture que pidog-voice, qui fonctionne : arecord en brut sur stdout. 10 ms par trame suffit largement pour une pulsation."
+  },
+  "ecoute": {
+    "fenetre_s": 8.0,
+    "_fenetre_aide": "Duree analysee pour estimer le tempo. Moins de 6 s et l'autocorrelation devient fragile ; plus de 12 s et le robot met trop longtemps a reagir a un changement de morceau.",
+    "bpm_min": 60,
+    "bpm_max": 180,
+    "confiance_min": 0.45,
+    "_confiance_aide": "Mesure sur ce robot avec le score harmonique : bruit blanc 0,13 / parole 0,09 / musique reelle captee au micro 0,93 a 1,51. Le seuil 0,45 est loin des deux. Le monter s il hoche la tete sur une conversation.",
+    "reestimation_s": 8.0,
+    "_reestimation_aide": "Intervalle entre deux recalages du tempo pendant qu'il bouge. Le tempo est PREDIT entre deux : c'est ce qui rend le bruit des servos supportable.",
+    "patience_s": 40.0,
+    "_patience_aide": "Sans pulsation pendant ce temps, il s arrete et se remet a l ecoute immobile. GENEREUX A DESSEIN : le tempo d un morceau ne change pas, alors qu une mesure prise EN DANSANT echoue souvent — confiance 1,45 immobile contre 0,65 en mouvement, mesure le 24/08. A 12 s il s arretait toutes les 18 s en pleine musique. Une fois accroche, il vaut mieux continuer sur la grille predite que douter a chaque mesure ratee."
+  },
+  "mouvements": {
+    "temps_par_geste": 2,
+    "_temps_aide": "Un geste tous les N temps. 2 = un mouvement toutes les deux noires, ce qui laisse de vrais silences pour ecouter. A 1 le robot bouge sans arret et n'entend plus rien.",
+    "fraction_attaque": 0.35,
+    "_fraction_aide": "Part du creneau consacree au mouvement ; le reste est tenu immobile. Ce reglage ne decide pas seulement de l allure : il decide de ce que le robot ENTEND. A 0,55 et un geste toutes les deux noires, 66 % du temps etait masque et il ne restait pas assez d ecoute pour confirmer le tempo — le robot perdait le rythme au bout de 18 s en pleine musique. A 0,35 le geste est plus sec et il reste plus de la moitie du temps pour ecouter.",
+    "amplitude_tete_deg": 35,
+    "amplitude_queue_deg": 40,
+    "tangage_deg": 15,
+    "marge_masque_ms": 80,
+    "_masque_aide": "Marge ajoutee autour de chaque geste dans le masque du micro. Les servos resonnent un peu apres l'arret ; sans marge, cette trainee passe pour une attaque musicale.",
+    "amplitude_roulis_deg": 25,
+    "figures": [
+      {
+        "nom": "regard_gauche",
+        "tete": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "poids": 3
+      },
+      {
+        "nom": "regard_droite",
+        "tete": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "poids": 3
+      },
+      {
+        "nom": "penche_gauche",
+        "tete": [
+          0.35,
+          1.0,
+          0.0
+        ],
+        "poids": 2
+      },
+      {
+        "nom": "penche_droite",
+        "tete": [
+          -0.35,
+          -1.0,
+          0.0
+        ],
+        "poids": 2
+      },
+      {
+        "nom": "museau_haut",
+        "tete": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "poids": 2
+      },
+      {
+        "nom": "museau_bas",
+        "tete": [
+          0.0,
+          0.0,
+          -1.0
+        ],
+        "poids": 2
+      },
+      {
+        "nom": "coin_haut_g",
+        "tete": [
+          0.7,
+          0.0,
+          0.7
+        ],
+        "poids": 1
+      },
+      {
+        "nom": "coin_bas_d",
+        "tete": [
+          -0.7,
+          0.0,
+          -0.7
+        ],
+        "poids": 1
+      },
+      {
+        "nom": "retour_centre",
+        "tete": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "poids": 1
+      }
+    ],
+    "_figures_aide": "Tirees au sort a chaque temps, ponderees par 'poids'. Les valeurs de 'tete' sont des FRACTIONS des amplitudes ci-dessus : [lacet, roulis, tangage], entre -1 et 1. Ajoutez-en librement. Deux garde-fous : jamais deux fois la meme figure de suite, et jamais une figure trop proche de la precedente — sans quoi le tirage produit des gestes minuscules qui ne se voient pas.",
+    "ecart_minimal": 0.6,
+    "_ecart_aide": "Distance minimale entre deux figures consecutives, en fraction d'amplitude. Empeche d'enchainer deux positions voisines, ce qui donnerait un mouvement imperceptible sur un temps.",
+    "variation_queue": 0.35,
+    "_variation_queue_aide": "La queue bat a chaque geste en alternant les cotes, avec une amplitude variant aleatoirement de +/- cette fraction. Le battement regulier est ce qui donne la pulsation ; la variation evite l'effet metronome."
+  },
+  "securite": {
+    "duree_max_s": 300,
+    "_duree_aide": "Arret automatique. Evite qu'il hoche la tete toute la nuit si on l'oublie.",
+    "batterie_minimale_pourcent": 25,
+    "_batterie_aide": "Tete et queue seulement, donc peu gourmand — mais sous ce seuil les servos font decrocher l'alimentation (constate a 5,8 V le 24/08). Mettre a 0 pour desactiver."
+  }
+}
