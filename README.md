@@ -153,22 +153,22 @@ prédit entre deux recalages.
 ## 🤝 Le matériel du projet
 
 *Liens partenaires Amazon : si vous achetez via ces liens, le projet touche une petite
-commission, sans surcoût pour vous. Ce sont les machines sur lesquelles ce code a été
-développé et testé.*
+commission, sans surcoût pour vous. Ce sont le matériel
+du projet : la carte qui tourne dans le chien, sa carte mémoire et le Mac qui fait tourner l'IA.*
 
 <table>
 <tr>
 <td align="center" width="33%">
-  <a href="https://link.amazon/B0bYWa5Tm"><img src="assets/pidog.jpg" width="200" alt="Robot chien SunFounder PiDog"></a><br>
-  <b>SunFounder PiDog</b><br><sub>Le mélomane</sub>
+  <a href="https://www.amazon.com/dp/B07V5JTMV9?linkCode=ll2&amp;tag=koua29-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B07V5JTMV9.jpg" width="200" alt="CanaKit Raspberry Pi 4 (4 GB)"></a><br>
+  <b><a href="https://www.amazon.com/dp/B07V5JTMV9?linkCode=ll2&amp;tag=koua29-20&amp;ref_=as_li_ss_tl">CanaKit Raspberry Pi 4 (4 GB)</a></b><br><sub>Kit avec la carte qui tourne dans le chien</sub>
 </td>
 <td align="center" width="33%">
-  <a href="https://link.amazon/B0jdCWkVR"><img src="assets/raspberry-pi4.jpg" width="200" alt="Raspberry Pi 4"></a><br>
-  <b>Raspberry Pi 4</b><br><sub>Détection de tempo et servos</sub>
+  <a href="https://www.amazon.com/dp/B0B7NVMBPL?linkCode=ll2&amp;tag=koua29-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B0B7NVMBPL.jpg" width="200" alt="SanDisk 64 GB microSD (2-pack)"></a><br>
+  <b><a href="https://www.amazon.com/dp/B0B7NVMBPL?linkCode=ll2&amp;tag=koua29-20&amp;ref_=as_li_ss_tl">SanDisk 64 GB microSD (2-pack)</a></b><br><sub>Raspberry Pi OS et les fichiers du projet</sub>
 </td>
 <td align="center" width="33%">
-  <a href="https://link.amazon/B0bhYDJWI"><img src="assets/mac-mini.jpg" width="200" alt="Apple Mac Mini"></a><br>
-  <b>Apple Mac Mini</b><br><sub>La vérité terrain — librosa</sub>
+  <a href="https://www.amazon.com/dp/B0DM71CDHV?linkCode=ll2&amp;tag=koua29-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B0DM71CDHV.jpg" width="200" alt="Apple Mac mini (M4)"></a><br>
+  <b><a href="https://www.amazon.com/dp/B0DM71CDHV?linkCode=ll2&amp;tag=koua29-20&amp;ref_=as_li_ss_tl">Apple Mac mini (M4)</a></b><br><sub>Le cerveau — Whisper + Ollama</sub>
 </td>
 </tr>
 </table>
