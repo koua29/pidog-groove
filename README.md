@@ -1,196 +1,196 @@
 # pidog-groove
 
-**PiDog écoute la musique autour de lui et bouge la tête et la queue en rythme.**
+<p align="center">🇺🇸 <b>English</b> · 🇫🇷 <a href="README.fr.md">Français</a></p>
 
-Pas de fichier à jouer, pas de partition : il utilise **son propre micro**,
-détecte le tempo de ce qu'il entend, et tombe sur les temps. Dites-lui
-« PiDog, écoute la musique » et il se met à hocher la tête sur ce qui passe.
+**PiDog listens to the music around it and moves its head and tail to the beat.**
 
-Quatrième projet de la famille, après [pidog-voice](https://github.com/koua29/pidog-voice),
-[pidog-energy](https://github.com/koua29/pidog-energy) et
+No file to play, no score: it uses **its own microphone**,
+detects the tempo of what it hears, and lands on the beats. Say
+"PiDog, écoute la musique" ("PiDog, listen to the music") and it starts nodding along to whatever's playing.
+
+Fourth project of the family, after [pidog-voice](https://github.com/koua29/pidog-voice),
+[pidog-energy](https://github.com/koua29/pidog-energy) and
 [pidog-patrol](https://github.com/koua29/pidog-patrol).
 
 ---
 
-## Le vrai problème : le chien s'entend lui-même
+## The real problem: the dog hears itself
 
-Détecter un tempo est un exercice classique. Ce qui rend ce projet difficile
-est propre au robot, et c'est **mesuré, pas supposé** : les servos en mouvement
-portent le bruit à **1513 RMS contre 35 au silence** — 42 fois plus fort que la
-musique captée. Un chien qui bouge la tête pour écouter s'entend donc surtout
-lui-même, et un détecteur naïf verrouille sur le rythme de ses propres servos
-(~85 BPM) au lieu de celui du morceau.
+Detecting a tempo is a classic exercise. What makes this project hard
+is specific to the robot, and it's **measured, not assumed**: moving servos
+push the noise to **1513 RMS versus 35 in silence** — 42 times louder than the
+captured music. A dog that moves its head to listen therefore mostly hears
+itself, and a naive detector locks onto the rhythm of its own servos
+(~85 BPM) instead of the song's.
 
-La parade tient à une chose qu'on connaît exactement : **l'instant où l'on
-commande chaque geste**. On masque donc ces fenêtres-là du micro. Le robot
-n'analyse que ce qu'il entend *entre* ses mouvements.
+The workaround rests on one thing we know exactly: **the moment we
+command each gesture**. So those windows are masked from the microphone. The robot
+only analyses what it hears *between* its movements.
 
 ```
-   ┌─ écoute immobile 8 s ──┐
-   │  estime tempo + phase  │   confiance suffisante ?
-   └────────────┬───────────┘
-                │ oui
+   ┌─ listens still for 8 s ─┐
+   │  estimates tempo + phase│   confident enough?
+   └────────────┬────────────┘
+                │ yes
                 ▼
-   ┌─ prédit les temps suivants ─┐   ← plus besoin d'entendre CHAQUE temps
-   │  bouge dessus (tête, queue) │
-   │  masque le micro pendant    │   ← c'est ce qui rend le bruit supportable
-   │  ré-estime dans les creux   │
+   ┌─ predicts the next beats ───┐   ← no need to hear EVERY beat anymore
+   │  moves on them (head, tail) │
+   │  masks the mic meanwhile    │   ← this is what makes the noise bearable
+   │  re-estimates in the gaps   │
    └─────────────────────────────┘
 ```
 
-Une fois le tempo accroché, il est **prédit** entre deux ré-estimations : le
-robot n'a plus besoin d'entendre chaque temps, seulement de recaler de temps en
-temps. C'est ce qui rend le bruit des servos supportable.
+Once the tempo is locked, it is **predicted** between two re-estimations: the
+robot no longer needs to hear every beat, only to re-sync from time to
+time. That's what makes the servo noise bearable.
 
-## Ce qu'il fait, ce qu'il ne fait pas
+## What it does, what it doesn't
 
-- **Tête et queue seulement.** Pas les pattes : rien à faire tomber, peu de
-  courant tiré.
-- **Aucun son émis.** Il écoute, il ne joue rien. Le haut-parleur reste libre
-  pour la musique que vous mettez.
-- **N'importe quelle source.** Une enceinte, la télé, vous qui chantez — tant
-  que ça a une pulsation nette.
+- **Head and tail only.** Not the legs: nothing to knock over, little
+  current drawn.
+- **No sound emitted.** It listens, it doesn't play anything. The speaker stays free
+  for the music you put on.
+- **Any source.** A speaker, the TV, you singing — as long as
+  there's a clear pulse.
 
-## La détection de tempo, vérifiée
+## Tempo detection, verified
 
-Tout tient sur le Pi, **sans librosa** : une enveloppe d'attaque par flux
-spectral (une FFT de 1024 points coûte 86 µs sur ce Pi 4) et une
-autocorrélation. Deux corrections, chacune tirée d'un échec mesuré :
+Everything runs on the Pi, **without librosa**: an onset envelope based on spectral
+flux (a 1024-point FFT takes 86 µs on this Pi 4) and an
+autocorrelation. Two fixes, each drawn from a measured failure:
 
-- **Somme des harmoniques.** Sur un enregistrement réel à 120 BPM, le pic brut
-  le plus haut tombait à 60 — le demi-tempo, piège classique de
-  l'autocorrélation. Une vraie période se distingue parce que ses multiples
-  corrèlent aussi ; une subdivision, non.
-- **Périodes fractionnaires.** À 160 BPM la période vaut 37,5 trames de 10 ms :
-  en entiers, l'erreur d'arrondi s'accumule sur les harmoniques et le score
-  s'effondre. On évalue donc des périodes flottantes.
+- **Harmonic sum.** On a real recording at 120 BPM, the highest raw peak
+  landed at 60 — half-tempo, the classic autocorrelation trap.
+  A true period stands out because its multiples also
+  correlate; a subdivision doesn't.
+- **Fractional periods.** At 160 BPM the period is 37.5 frames of 10 ms:
+  with integers, the rounding error piles up across the harmonics and the score
+  collapses. So floating-point periods are evaluated.
 
-La méthode est calibrée contre une **vérité terrain** : la musique enregistrée
-au micro du robot, analysée par librosa sur une machine séparée. Résultat sur
-six fenêtres glissantes d'un morceau à 120,0 BPM :
+The method is calibrated against **ground truth**: music recorded
+with the robot's microphone, analysed by librosa on a separate machine. Results over
+six sliding windows of a 120.0 BPM song:
 
-| fenêtre | tempo trouvé | confiance |
+| window | tempo found | confidence |
 |---|---|---|
-| 0–8 s | 120,6 | 1,51 |
-| 4–12 s | 121,2 | 1,17 |
-| 8–16 s | 121,8 | 1,16 |
-| 12–20 s | 121,2 | 1,00 |
-| 16–24 s | 120,0 | 0,93 |
-| 20–28 s | 120,3 | 1,15 |
+| 0–8 s | 120.6 | 1.51 |
+| 4–12 s | 121.2 | 1.17 |
+| 8–16 s | 121.8 | 1.16 |
+| 12–20 s | 121.2 | 1.00 |
+| 16–24 s | 120.0 | 0.93 |
+| 20–28 s | 120.3 | 1.15 |
 
-Pour référence, du bruit blanc donne une confiance de 0,13, de la parole 0,09 :
-le seuil de déclenchement est à 0,45, loin des deux.
+For reference, white noise gives a confidence of 0.13, speech 0.09:
+the trigger threshold is 0.45, far from both.
 
 ## Installation
 
-Sur le Pi :
+On the Pi:
 
 ```bash
 rsync -az --exclude __pycache__ ./ pidog:~/script/pidog-groove/
 ssh pidog 'python3 ~/script/pidog-groove/outils/verifier.py'
 ```
 
-`verifier.py` contrôle la configuration et capte 2 s de micro sans toucher aux
+`verifier.py` checks the configuration and records 2 s from the microphone without touching the
 servos.
 
-## Utilisation
+## Usage
 
 ```bash
-python3 ecoute.py                 # jusqu'à duree_max_s, Ctrl-C pour sortir
+python3 ecoute.py                 # until duree_max_s, Ctrl-C to quit
 python3 ecoute.py --duree 60
-python3 ecoute.py --sans-robot    # écoute et affiche le tempo, sans bouger
-python3 tests/test_rythme.py      # 11 tests, aucun matériel requis
+python3 ecoute.py --sans-robot    # listens and prints the tempo, without moving
+python3 tests/test_rythme.py      # 11 tests, no hardware required
 ```
 
-À la voix, après `install/integrer_pidog_voice.sh` : **« PiDog, écoute la
-musique. »** L'écoute vocale se suspend pendant ce temps — il partagerait sinon
-le micro et le GPIO — et repart toute seule à la fin.
+By voice, after `install/integrer_pidog_voice.sh`: **"PiDog, écoute la
+musique."** Voice listening pauses meanwhile — otherwise it would share
+the microphone and the GPIO — and resumes on its own at the end.
 
-## Régler le rendu
+## Tuning the result
 
-Tout est dans `config.json`, sans toucher au code.
+Everything is in `config.json`, no code to touch.
 
-**Le vocabulaire de gestes** est une liste de figures tirées au sort, pondérées.
-Chaque `tete` est `[lacet, roulis, tangage]` en fractions des amplitudes. Deux
-garde-fous : jamais deux fois la même figure de suite, et jamais deux positions
-voisines (sinon le tirage produit un geste imperceptible qui se lit comme un
-raté).
+**The gesture vocabulary** is a list of weighted, randomly drawn moves.
+Each `tete` (head) is `[yaw, roll, pitch]` as fractions of the amplitudes. Two
+safeguards: never the same move twice in a row, and never two neighbouring
+positions (otherwise the draw produces an imperceptible gesture that reads as a
+miss).
 
-**`temps_par_geste`** — un geste toutes les N noires. À 2 il danse plus, à 3 il
-entend mieux : plus il bouge, plus il se couvre. C'est le premier réglage à
-monter s'il perd le rythme.
+**`temps_par_geste`** — one gesture every N quarter notes. At 2 it dances more, at 3 it
+hears better: the more it moves, the more it drowns itself out. It's the first setting to
+raise if it loses the beat.
 
-**`fraction_attaque`** ne décide pas que de l'allure, mais de ce qu'il *entend* :
-c'est la part du temps consacrée au mouvement, le reste étant tenu immobile —
-donc disponible pour écouter.
+**`fraction_attaque`** doesn't only set the look, but what it *hears*:
+it's the share of the beat spent moving, the rest being held still —
+and therefore available for listening.
 
-## Pièges éventés
+## Pitfalls already found
 
-Chacun a coûté une séance.
+Each one cost a session.
 
-**Le PATH sans `/usr/sbin`.** `robot_hat` appelle `i2cdetect` pour scanner le
-bus I2C. Lancé depuis un SSH ordinaire, ce chemin manque, la commande est
-introuvable, le scan renvoie une liste **vide**, et la bibliothèque écrit
-ensuite dans le vide **sans lever la moindre erreur** — fils d'exécution
-vivants, compteurs de gestes parfaits, aucun servo qui bouge. Le programme
-corrige donc son propre PATH au démarrage.
+**A PATH without `/usr/sbin`.** `robot_hat` calls `i2cdetect` to scan the
+I2C bus. Launched from a plain SSH session, that path is missing, the command is
+not found, the scan returns an **empty** list, and the library then writes
+into the void **without raising any error** — threads
+alive, perfect gesture counters, not a single servo moving. So the program
+fixes its own PATH at startup.
 
-**`Pidog()` peut démarrer sans ses fils d'exécution.** Il rend la main avec un
-seul thread et zéro moteur pilotable, sans erreur. Le programme **vérifie que
-`head_thread` et `tail_thread` tournent** avant de commander quoi que ce soit,
-et refuse de continuer sinon.
+**`Pidog()` can start without its threads.** It returns with a
+single thread and zero controllable motors, without an error. The program **checks that
+`head_thread` and `tail_thread` are running** before commanding anything,
+and refuses to continue otherwise.
 
-**Ne jamais `kill -9` le robot.** Un arrêt forcé laisse des lignes GPIO
-ouvertes → `GPIO busy` au lancement suivant et initialisation instable. On
-arrête par SIGTERM puis SIGINT.
+**Never `kill -9` the robot.** A forced stop leaves GPIO lines
+open → `GPIO busy` on the next launch and unstable initialisation. Stop it
+with SIGTERM then SIGINT.
 
-**Il perdait le rythme en pleine musique.** Immobile il mesurait une confiance
-de 1,45 ; en dansant, 0,65. Une mesure ratée pendant qu'il bouge ne veut pas
-dire que la musique s'est arrêtée : le tempo d'un morceau ne change pas, donc la
-patience avant abandon est **généreuse à dessein** (40 s), et le tempo est
-prédit entre deux recalages.
+**It used to lose the beat mid-song.** Standing still it measured a confidence
+of 1.45; while dancing, 0.65. A missed measurement while it moves doesn't
+mean the music stopped: a song's tempo doesn't change, so the
+patience before giving up is **deliberately generous** (40 s), and the tempo is
+predicted between two re-syncs.
 
-## 🤝 Le matériel du projet
+## 🤝 Project hardware
 
-*Liens partenaires Amazon : si vous achetez via ces liens, le projet touche une petite
-commission, sans surcoût pour vous. Ce sont le matériel
-du projet : la carte qui tourne dans le chien, sa carte mémoire et le Mac qui fait tourner l'IA.*
+*Amazon affiliate links: if you buy through these links, the project earns a small commission at no extra cost to you.*
 
 <table>
 <tr>
 <td align="center" width="33%">
   <a href="https://www.amazon.com/dp/B07V5JTMV9?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B07V5JTMV9.jpg" width="200" alt="CanaKit Raspberry Pi 4 (4 GB)"></a><br>
-  <b><a href="https://www.amazon.com/dp/B07V5JTMV9?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl">CanaKit Raspberry Pi 4 (4 GB)</a></b><br><sub>Kit avec la carte qui tourne dans le chien</sub>
+  <b><a href="https://www.amazon.com/dp/B07V5JTMV9?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl">CanaKit Raspberry Pi 4 (4 GB)</a></b><br><sub>Kit with the board that runs inside the dog</sub>
 </td>
 <td align="center" width="33%">
   <a href="https://www.amazon.com/dp/B0B7NVMBPL?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B0B7NVMBPL.jpg" width="200" alt="SanDisk 64 GB microSD (2-pack)"></a><br>
-  <b><a href="https://www.amazon.com/dp/B0B7NVMBPL?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl">SanDisk 64 GB microSD (2-pack)</a></b><br><sub>Raspberry Pi OS et les fichiers du projet</sub>
+  <b><a href="https://www.amazon.com/dp/B0B7NVMBPL?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl">SanDisk 64 GB microSD (2-pack)</a></b><br><sub>Raspberry Pi OS and the project files</sub>
 </td>
 <td align="center" width="33%">
-  <a href="https://www.amazon.com/dp/B0FLD69KFF?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B0FLD69KFF.jpg" width="200" alt="Anker Soundcore 2 (enceinte Bluetooth)"></a><br>
-  <b><a href="https://www.amazon.com/dp/B0FLD69KFF?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl">Anker Soundcore 2 (enceinte Bluetooth)</a></b><br><sub>La musique que le chien écoute, et ses réponses</sub>
+  <a href="https://www.amazon.com/dp/B0FLD69KFF?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl"><img src="assets/amazon-B0FLD69KFF.jpg" width="200" alt="Anker Soundcore 2 (Bluetooth speaker)"></a><br>
+  <b><a href="https://www.amazon.com/dp/B0FLD69KFF?linkCode=ll2&amp;tag=koua29pgroove-20&amp;ref_=as_li_ss_tl">Anker Soundcore 2 (Bluetooth speaker)</a></b><br><sub>The music the dog listens to, and its replies</sub>
 </td>
 </tr>
 </table>
 
-<sub>En tant que Partenaire Amazon, je réalise un bénéfice sur les achats remplissant les conditions requises. · As an Amazon Associate I earn from qualifying purchases.</sub>
+<sub>As an Amazon Associate I earn from qualifying purchases.</sub>
 
-## ☕ Offrez-moi un café
+## ☕ Buy me a coffee
 
-Ce projet est gratuit et open source. S'il vous est utile, vous pouvez me remercier
-en m'offrant un café — il suffit de scanner ce QR code PayPal. Merci beaucoup ! 🙏
+This project is free and open source. If you find it useful, you can say thanks
+by buying me a coffee — just scan this PayPal QR code. Thanks a lot! 🙏
 
 <p align="center">
-  <img src="docs/paypal-qr.png" alt="QR code PayPal pour offrir un café" width="220" />
+  <img src="docs/paypal-qr.png" alt="PayPal QR code to buy me a coffee" width="220" />
 </p>
 
-## La famille PiDog
+## The PiDog family
 
-- **[pidog-voice](https://github.com/koua29/pidog-voice)** — commande vocale française
-- **[pidog-energy](https://github.com/koua29/pidog-energy)** — surveillance de batterie
-- **[pidog-patrol](https://github.com/koua29/pidog-patrol)** — patrouille autonome
-- **pidog-groove** — vous êtes ici
+- **[pidog-voice](https://github.com/koua29/pidog-voice)** — French voice control
+- **[pidog-energy](https://github.com/koua29/pidog-energy)** — battery monitoring
+- **[pidog-patrol](https://github.com/koua29/pidog-patrol)** — autonomous patrol
+- **pidog-groove** — you are here
 
-## Licence
+## License
 
 [MIT](LICENSE) © 2026 koua29
